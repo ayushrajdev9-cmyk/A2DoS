@@ -2,57 +2,74 @@
 
 **Made by Ayush Rajdev**
 
-Learn DoS/DDoS concepts safely inside your own Docker environment.
-Attack only your own containers — zero legal risk, maximum learning.
+Learn DoS/DDoS concepts safely inside your own Docker environment. Attack only your own containers — zero legal risk, maximum learning.
 
-## What's inside
+## Features
 
 ```
 A2DoS/
-├── lab.py               # HTTP flood attack (RPS display)
-├── slowloris.py         # Connection exhaustion attack (slowloris)
-├── docker-compose.yml   # Spins up a vulnerable Nginx target
+├── attacks.py            # 4 attack modes: http, slowloris, syn, dns
+├── dashboard.py          # Live monitoring TUI (RPS, response time, status)
+├── auto_demo.py          # One-command full lifecycle demo
+├── plot_stats.py         # Graph attack stats from CSV (requires matplotlib)
+├── docker-compose.yml    # Vulnerable Nginx target
 ├── nginx/
-│   ├── conf.d/
-│   │   ├── default.conf      # Unprotected target
-│   │   └── defense.conf      # Nginx rate/conn limits (comment in to enable)
-│   └── html/index.html       # Target page
+│   ├── conf.d/default.conf      # Unprotected
+│   ├── conf.d/defense.conf      # Nginx limits (comment in)
+│   └── html/index.html
 ├── defense/
-│   ├── rate_limit.sh         # iptables rate limiting (blocks HTTP flood)
-│   ├── limit_connections.sh  # iptables connlimit (blocks slowloris)
-│   └── monitor.sh            # Watch connections in real-time
-└── requirements.txt
+│   ├── rate_limit.sh            # iptables rate limiting (Linux)
+│   ├── limit_connections.sh     # iptables connlimit (Linux)
+│   ├── defend.ps1               # Windows firewall defense (PowerShell)
+│   └── monitor.sh               # Watch connections live
+├── lab.py                # HTTP flood (legacy)
+├── slowloris.py          # Slowloris (legacy)
+├── requirements.txt
+└── README.md
 ```
 
 ## Quick start
 
 ```bash
-# 1. Start the target server
 docker compose up -d
-
-# 2. Install Python deps
 pip install -r requirements.txt
-
-# 3. HTTP flood attack
-python lab.py http://localhost:8080
-
-# 4. Slowloris attack (different technique — holds connections open)
-python slowloris.py http://localhost:8080
-
-# 5. Apply rate limiting defense (while flooding)
-bash defense/rate_limit.sh
-
-# 6. Apply connection limiting defense (while slowloris runs)
-bash defense/limit_connections.sh
 ```
 
-## What you'll learn
+### Attack modes
 
-- **HTTP floods** — threaded GET requests overwhelm server bandwidth
-- **Slowloris** — hold connections open with partial headers, exhaust connection pool
-- **Rate limiting** — iptables `recent` module blocks >10 req/s per IP
-- **Connection limiting** — iptables `connlimit` blocks >20 concurrent connections per IP
-- **Nginx defenses** — `limit_req` and `limit_conn` at the application layer
+| Mode | Command | What it does |
+|------|---------|-------------|
+| HTTP flood | `python attacks.py http://localhost:8080 http` | 50 threads of GET requests |
+| Slowloris | `python attacks.py http://localhost:8080 slowloris` | Hold 500 connections open |
+| SYN sim | `python attacks.py http://localhost:8080 syn` | Rapid TCP connections |
+| DNS sim | `python attacks.py http://localhost:8080 dns` | Rapid UDP queries |
+
+### Save & plot stats
+
+```bash
+python attacks.py http://localhost:8080 http --csv attack_log.csv
+python plot_stats.py attack_log.csv
+```
+
+### Live dashboard
+
+```bash
+python dashboard.py http://localhost:8080
+```
+
+### Auto demo (attack → defense → recovery)
+
+```bash
+python auto_demo.py http://localhost:8080
+```
+
+### Defense
+
+| Platform | HTTP flood | Slowloris | Revert |
+|----------|-----------|-----------|--------|
+| Linux | `bash defense/rate_limit.sh` | `bash defense/limit_connections.sh` | `bash defense/rate_limit.sh revert` |
+| Windows | `.\defense\defend.ps1 -Action rate` | `.\defense\defend.ps1 -Action conn` | `.\defense\defend.ps1 -Action revert` |
+| Nginx | Uncomment `nginx/conf.d/defense.conf` | Same | Comment out |
 
 ## License
 
