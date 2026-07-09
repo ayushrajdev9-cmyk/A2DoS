@@ -7,3 +7,4 @@ if exist "%~dp0A2DDoS.exe" (
     echo Error: A2DDoS.exe or A2DDoS.py not found
     pause
 )
+if "%*"=="" pause
