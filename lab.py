@@ -32,14 +32,17 @@ def handler(sig, frame):
     running = False
 
 signal.signal(signal.SIGINT, handler)
+start = time.time()
 print(f"Flooding {url} — Ctrl+C to stop")
 print("=" * 40)
 for _ in range(50):
     threading.Thread(target=flood, daemon=True).start()
 try:
     while running:
-        print(f"Requests sent: {sent}", end="\r")
+        elapsed = time.time() - start or 0.001
+        print(f"Sent: {sent} | RPS: {sent/elapsed:.0f} | Elapsed: {elapsed:.0f}s", end="\r")
         time.sleep(0.5)
 except KeyboardInterrupt:
     pass
-print(f"\nDone. Total requests: {sent}")
+elapsed = time.time() - start
+print(f"\nDone. {sent} requests in {elapsed:.0f}s ({sent/elapsed:.0f} req/s)")
